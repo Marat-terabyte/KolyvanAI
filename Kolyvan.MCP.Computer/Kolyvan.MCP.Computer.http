@@ -1,6 +1,0 @@
-@Kolyvan.MCP.Computer_HostAddress = http://localhost:5193
-
-GET {{Kolyvan.MCP.Computer_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
