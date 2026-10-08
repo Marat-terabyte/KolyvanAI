@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Kolyvan.Agent.Core.ContextManagers;
 using Kolyvan.Agent.Core.Outputs;
 using Kolyvan.Agent.Core.Tools;
@@ -35,7 +36,7 @@ public class Agent
         {
             List<AIContent> responseContents = [];
 
-            List<ChatMessage> messages = await _contextManager.GetChatMessagesAsync(cancellationToken);
+            ReadOnlyCollection<ChatMessage> messages = await _contextManager.GetChatMessagesAsync(cancellationToken);
             await foreach (ChatResponseUpdate update in _chatClient.GetStreamingResponseAsync(messages, chatOptions, cancellationToken))
             {
                 foreach (AIContent content in update.Contents)

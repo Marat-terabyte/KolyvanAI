@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using System.Collections.ObjectModel;
 
 namespace Kolyvan.Agent.Core.ContextManagers;
 
@@ -20,5 +21,5 @@ public interface IContextManager
     /// <summary>
     /// Получение сообщений из контекста
     /// </summary>
-    public Task<List<ChatMessage>> GetChatMessagesAsync(CancellationToken cancellationToken);
+    public Task<ReadOnlyCollection<ChatMessage>> GetChatMessagesAsync(CancellationToken cancellationToken);
 }
