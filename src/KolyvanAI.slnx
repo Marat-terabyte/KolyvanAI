@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Kolyvan.Agent.Console/Kolyvan.Agent.Console.csproj" />
+  <Project Path="Kolyvan.Agent.Core/Kolyvan.Agent.Core.csproj" />
+  <Project Path="Kolyvan.Gateway/Kolyvan.Gateway.csproj" />
+  <Project Path="Kolyvan.MCP.Computer/Kolyvan.MCP.Computer.csproj" />
+</Solution>
