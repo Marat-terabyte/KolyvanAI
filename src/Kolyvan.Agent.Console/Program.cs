@@ -47,7 +47,7 @@ public static class Program
             credential: new ApiKeyCredential(key),
             options: new OpenAIClientOptions
             {
-                Endpoint = new Uri("https://api.timeweb.ai/v1"),
+                Endpoint = new Uri("http://localhost:5187/v1"),
             }
         ).AsIChatClient();
         

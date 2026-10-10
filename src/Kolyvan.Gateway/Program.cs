@@ -1,3 +1,4 @@
+using Kolyvan.Gateway.Extensions.DI;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -15,16 +16,7 @@ public static class Program
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
-        var client = new ChatClient(
-            model: "anthropic/claude-haiku-5-5",
-            credential: new ApiKeyCredential(""),
-            options: new OpenAIClientOptions
-            {
-                Endpoint = new Uri("https://api.timeweb.ai/v1"),
-            }
-        ).AsIChatClient();
-
-        builder.Services.AddSingleton<IChatClient>(client);
+        builder.Services.AddChatClients(builder.Configuration);
 
         var app = builder.Build();
 

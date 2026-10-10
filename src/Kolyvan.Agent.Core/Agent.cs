@@ -1,8 +1,8 @@
-using System.Collections.ObjectModel;
 using Kolyvan.Agent.Core.ContextManagers;
 using Kolyvan.Agent.Core.Outputs;
 using Kolyvan.Agent.Core.Tools;
 using Microsoft.Extensions.AI;
+using System.Collections.ObjectModel;
 
 namespace Kolyvan.Agent.Core;
 
