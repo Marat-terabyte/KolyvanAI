@@ -8,6 +8,16 @@ namespace Kolyvan.Gateway.Mappers;
 
 public static class OpenAiMapper
 {
+    public static ToolCallDto ToToolCall(FunctionCallContent fc) => new()
+    {
+        Id = fc.CallId,
+        Function = new ToolCallFunctionDto
+        {
+            Name = fc.Name,
+            Arguments = JsonSerializer.Serialize(fc.Arguments ?? new Dictionary<string, object?>())
+        }
+    };
+
     public static List<ChatMessage> ToChatMessages(IReadOnlyList<RequestMessage> messages)
     {
         var result = new List<ChatMessage>(messages.Count);
@@ -21,11 +31,43 @@ public static class OpenAiMapper
                 "system" or "developer" => ChatRole.System,
                 "user" => ChatRole.User,
                 "assistant" => ChatRole.Assistant,
+                "tool" => ChatRole.Tool,
                 _ => throw new OpenAiRequestException(
                     $"Unsupported role '{m.Role}'.", $"messages[{i}].role")
             };
 
-            result.Add(new ChatMessage(role, ReadText(m.Content, i)) { AuthorName = m.Name });
+            ChatMessage msg;
+
+            if (m.Role == "tool")
+            {
+                if (string.IsNullOrEmpty(m.ToolCallId))
+                {
+                    throw new OpenAiRequestException("'tool_call_id' is required.", $"messages[{i}].tool_call_id");
+                }
+
+                msg = new ChatMessage(ChatRole.Tool, [new FunctionResultContent(m.ToolCallId, ReadText(m.Content, i))]);
+            }
+            else
+            {
+                var contents = new List<AIContent>();
+                var text = ReadText(m.Content, i);
+                if (text.Length > 0)
+                {
+                    contents.Add(new TextContent(text));
+                }
+
+                foreach (var call in m.ToolCalls ?? [])
+                {
+                    var args = string.IsNullOrWhiteSpace(call.Function?.Arguments) ? null
+                        : JsonSerializer.Deserialize<Dictionary<string, object?>>(call.Function.Arguments);
+
+                    contents.Add(new FunctionCallContent(call.Id ?? "", call.Function?.Name ?? "", args));
+                }
+
+                msg = new ChatMessage(role, contents) { AuthorName = m.Name };
+            }
+
+            result.Add(msg);
         }
 
         return result;
@@ -40,7 +82,28 @@ public static class OpenAiMapper
         FrequencyPenalty = request.FrequencyPenalty,
         PresencePenalty = request.PresencePenalty,
         Seed = request.Seed,
-        StopSequences = ReadStop(request.Stop)
+        StopSequences = ReadStop(request.Stop),
+        Tools = request.Tools?
+            .Where(t => t.Function?.Name is not null)
+            .Select(t => (AITool)AIFunctionFactory.CreateDeclaration(
+                t.Function!.Name!,
+                t.Function.Description,
+                t.Function.Parameters ?? JsonDocument.Parse("""{"type":"object","properties":{}}""").RootElement))
+            .ToList(),
+        ToolMode = ReadToolChoice(request.ToolChoice)
+    };
+    private static ChatToolMode? ReadToolChoice(JsonElement? choice) => choice switch
+    {
+        null => null,
+        { ValueKind: JsonValueKind.String } c => c.GetString() switch
+        {
+            "none" => ChatToolMode.None,
+            "required" => ChatToolMode.RequireAny,
+            _ => ChatToolMode.Auto
+        },
+        { ValueKind: JsonValueKind.Object } c => ChatToolMode.RequireSpecific(
+            c.GetProperty("function").GetProperty("name").GetString()!),
+        _ => null
     };
 
     public static string ToFinishReason(ChatFinishReason? reason)

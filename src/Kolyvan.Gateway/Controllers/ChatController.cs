@@ -50,12 +50,15 @@ public sealed class ChatController : ControllerBase
             : await CompleteOnceAsync(messages, options, model, cancellationToken);
     }
 
-    private async Task<IActionResult> CompleteOnceAsync(
-        List<ChatMessage> messages, ChatOptions options, string model, CancellationToken ct)
+    private async Task<IActionResult> CompleteOnceAsync(List<ChatMessage> messages, ChatOptions options, string model, CancellationToken ct)
     {
         try
         {
             var response = await _chatClient.GetResponseAsync(messages, options, ct);
+
+            var calls = response.Messages
+                .SelectMany(m => m.Contents).OfType<FunctionCallContent>()
+                .Select(OpenAiMapper.ToToolCall).ToList();
 
             return Ok(new ChatCompletionResponse
             {
@@ -67,11 +70,16 @@ public sealed class ChatController : ControllerBase
                     new ResponseChoice
                     {
                         Index = 0,
-                        Message = new ResponseMessage { Content = response.Text },
-                        FinishReason = OpenAiMapper.ToFinishReason(response.FinishReason)
+                        Message = new ResponseMessage
+                        {
+                            Content = string.IsNullOrEmpty(response.Text) ? null : response.Text,
+                            ToolCalls = calls.Count > 0 ? calls : null
+                        },
+                        FinishReason = calls.Count > 0 ? "tool_calls" : OpenAiMapper.ToFinishReason(response.FinishReason)
                     }
                 ],
-                Usage = OpenAiMapper.ToUsage(response.Usage)
+                Usage = OpenAiMapper.ToUsage(response.Usage),
+
             });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -87,6 +95,8 @@ public sealed class ChatController : ControllerBase
         var id = NewCompletionId();
         var created = UnixNow();
         var started = false;
+        var hasToolCalls = false;   // новое
+        var toolIndex = 0;
 
         string? finishReason = null;
         UsageDetails? usage = null;
@@ -141,6 +151,16 @@ public sealed class ChatController : ControllerBase
                     {
                         usage = u.Details;
                     }
+                    else if (content is FunctionCallContent fc)
+                    {
+                        hasToolCalls = true;
+                        await EnsureRoleSentAsync();
+                        var call = OpenAiMapper.ToToolCall(fc);
+                        await WriteChunkAsync(new ChunkDelta
+                        {
+                            ToolCalls = [new ToolCallChunkDto { Index = toolIndex++, Id = call.Id, Function = call.Function }]
+                        });
+                    }
                 }
 
                 await EnsureRoleSentAsync();
@@ -150,6 +170,9 @@ public sealed class ChatController : ControllerBase
                     await WriteChunkAsync(new ChunkDelta { Content = update.Text });
                 }
             }
+
+            await EnsureRoleSentAsync();
+            await WriteChunkAsync(new ChunkDelta(), hasToolCalls ? "tool_calls" : finishReason ?? "stop");   // изменено
 
             await EnsureRoleSentAsync();
             await WriteChunkAsync(new ChunkDelta(), finishReason ?? "stop");

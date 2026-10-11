@@ -18,6 +18,10 @@ public sealed class ChatCompletionRequest
     [JsonPropertyName("presence_penalty")] public float? PresencePenalty { get; init; }
     [JsonPropertyName("seed")] public long? Seed { get; init; }
 
+    [JsonPropertyName("tools")] public List<ToolDto>? Tools { get; init; }
+    /// <summary>"auto" | "none" | "required" | { "type":"function", "function": { "name": "..." } }</summary>
+    [JsonPropertyName("tool_choice")] public JsonElement? ToolChoice { get; init; }
+
     /// <summary>string | string[]</summary>
     [JsonPropertyName("stop")] public JsonElement? Stop { get; init; }
 }
@@ -35,6 +39,37 @@ public sealed class RequestMessage
     [JsonPropertyName("content")] public JsonElement? Content { get; init; }
 
     [JsonPropertyName("name")] public string? Name { get; init; }
+
+    [JsonPropertyName("tool_calls")] public List<ToolCallDto>? ToolCalls { get; init; }
+    [JsonPropertyName("tool_call_id")] public string? ToolCallId { get; init; }
+}
+
+public sealed class ToolDto
+{
+    [JsonPropertyName("type")] public string? Type { get; init; }
+    [JsonPropertyName("function")] public ToolFunctionDto? Function { get; init; }
+}
+
+public sealed class ToolFunctionDto
+{
+    [JsonPropertyName("name")] public string? Name { get; init; }
+    [JsonPropertyName("description")] public string? Description { get; init; }
+    /// <summary>JSON Schema</summary>
+    [JsonPropertyName("parameters")] public JsonElement? Parameters { get; init; }
+}
+
+public sealed class ToolCallDto
+{
+    [JsonPropertyName("id")] public string? Id { get; init; }
+    [JsonPropertyName("type")] public string Type { get; init; } = "function";
+    [JsonPropertyName("function")] public ToolCallFunctionDto? Function { get; init; }
+}
+
+public sealed class ToolCallFunctionDto
+{
+    [JsonPropertyName("name")] public string? Name { get; init; }
+    /// <summary>JSON-строка, а не объект</summary>
+    [JsonPropertyName("arguments")] public string? Arguments { get; init; }
 }
 
 // ---------- Response (non-streaming) ----------
@@ -62,7 +97,10 @@ public sealed class ResponseChoice
 public sealed class ResponseMessage
 {
     [JsonPropertyName("role")] public string Role { get; init; } = "assistant";
-    [JsonPropertyName("content")] public required string Content { get; init; }
+    [JsonPropertyName("content")] public string? Content { get; init; }
+    [JsonPropertyName("tool_calls")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<ToolCallDto>? ToolCalls { get; init; }
 }
 
 // ---------- Response (streaming chunks) ----------
@@ -98,6 +136,17 @@ public sealed class ChunkDelta
     [JsonPropertyName("content")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Content { get; init; }
+
+    [JsonPropertyName("tool_calls")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<ToolCallChunkDto>? ToolCalls { get; init; }
+}
+public sealed class ToolCallChunkDto
+{
+    [JsonPropertyName("index")] public int Index { get; init; }
+    [JsonPropertyName("id")] public string? Id { get; init; }
+    [JsonPropertyName("type")] public string Type { get; init; } = "function";
+    [JsonPropertyName("function")] public ToolCallFunctionDto? Function { get; init; }
 }
 
 public sealed class UsageDto
