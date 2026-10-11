@@ -11,7 +11,7 @@ public static class ChatClientDiExtension
 {
     public static void AddChatClients(this IServiceCollection services, ConfigurationManager configuration)
     {
-        string token = "";
+        string token = "sk-VfsezXtAgTU2MNPw0MDpuA";
         IChatClient externalChatClient = new ChatClient(
             model: "anthropic/claude-haiku-5-5",
             credential: new ApiKeyCredential(token),

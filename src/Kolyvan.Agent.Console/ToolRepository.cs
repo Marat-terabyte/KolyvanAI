@@ -4,7 +4,7 @@ using ModelContextProtocol.Client;
 
 namespace Kolyvan.Agent.Console;
 
-internal class ToolRepository : IToolRepository
+internal class ToolRepository : IToolRepository //TODO: Оптимизировать работу.
 {
     private readonly McpClient _mcpClient;
     private IList<AIFunction>? _aiFunctions = null;
@@ -18,9 +18,9 @@ internal class ToolRepository : IToolRepository
     {
         IList<McpClientTool> tools = await _mcpClient.ListToolsAsync(cancellationToken: cancellationToken);
 
-        _aiFunctions = (IList<AIFunction>)tools;
+        _aiFunctions = tools.Cast<AIFunction>().ToList();
 
-        return (IList<AITool>) tools;
+        return tools.Cast<AITool>().ToList();
     }
 
     public async Task<object?> InvokeToolAsync(string name, IDictionary<string, object?>? arguments, CancellationToken cancellationToken)
