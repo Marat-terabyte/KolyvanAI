@@ -1,6 +1,0 @@
-@Kolyvan.Gateway_HostAddress = http://localhost:5187
-
-GET {{Kolyvan.Gateway_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

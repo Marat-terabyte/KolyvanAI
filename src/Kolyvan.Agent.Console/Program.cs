@@ -3,6 +3,7 @@ using Kolyvan.Agent.Core.ContextManagers;
 using Kolyvan.Agent.Core.Outputs;
 using Kolyvan.Agent.Core.Tools;
 using Microsoft.Extensions.AI;
+using ModelContextProtocol.Client;
 using OpenAI;
 using OpenAI.Chat;
 
@@ -12,7 +13,7 @@ public static class Program
 {
     public static async Task Main()
     {
-        Core.Agent agent = CreateAgent();
+        Core.Agent agent = await CreateAgentAsync();
         while (true)
         {
             System.Console.Write(">>>");
@@ -27,11 +28,14 @@ public static class Program
         }
     }
     
-    private static Core.Agent CreateAgent()
+    private static async Task<Core.Agent> CreateAgentAsync()
     {
+        HttpClientTransport transport = new HttpClientTransport(new HttpClientTransportOptions() { Endpoint = new Uri("http://localhost:5193"), });
+        McpClient mcpClient = await McpClient.CreateAsync(transport);
+
         IChatClient client = CreateClient();
         IContextManager contextManager = new InMemoryContextManager();
-        IToolRepository toolRepository = new EmptyToolRepository();
+        IToolRepository toolRepository = new ToolRepository(mcpClient);
         IAgentOutput agentOutput = new ConsoleAgentOutput();
 
         return new Core.Agent(client, contextManager, toolRepository, agentOutput);
@@ -47,7 +51,7 @@ public static class Program
             credential: new ApiKeyCredential(key),
             options: new OpenAIClientOptions
             {
-                Endpoint = new Uri("https://api.timeweb.ai/v1"),
+                Endpoint = new Uri("http://localhost:5187/v1"),
             }
         ).AsIChatClient();
         
