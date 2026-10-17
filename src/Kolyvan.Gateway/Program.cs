@@ -1,9 +1,4 @@
 using Kolyvan.Gateway.Extensions.DI;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using Microsoft.Extensions.AI;
-using OpenAI;
-using OpenAI.Chat;
-using System.ClientModel;
 
 namespace Kolyvan.Gateway;
 

@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>kolyvan-gateway-6b5e82c0-12c4-4d63-a286-97dd5af85ec2</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
